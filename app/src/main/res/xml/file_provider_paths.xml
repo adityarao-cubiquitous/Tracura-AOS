@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Cache directory for temporary files - this is the key one for camera images -->
+    <cache-path name="cache" path="." />
+    
+    <!-- Internal files directory -->
+    <files-path name="files" path="." />
+    
+    <!-- External files directory - this is what we use for camera images -->
+    <external-files-path name="external_files" path="." />
+    
+    <!-- External cache directory -->
+    <external-cache-path name="external_cache" path="." />
+    
+    <!-- Media directory for images -->
+    <external-files-path name="media" path="Pictures/" />
+    
+    <!-- Additional paths for comprehensive coverage -->
+    <files-path name="images" path="images/" />
+    <cache-path name="temp" path="temp/" />
+    <external-files-path name="camera" path="camera/" />
+    
+    <!-- Root cache path for direct access -->
+    <cache-path name="." path="." />
+</paths>

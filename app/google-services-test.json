@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "66445135402",
+    "project_id": "tracura-testing",
+    "storage_bucket": "tracura-testing.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:66445135402:android:ccbef7d9f532b1f190fd53",
+        "android_client_info": {
+          "package_name": "com.cubiquitous.tracura"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbfwZCHIlqVZHAswJjWxKTP_u0YNm2cMg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:66445135402:android:b77a5efea5e9190590fd53",
+        "android_client_info": {
+          "package_name": "com.deeksha.avr"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbfwZCHIlqVZHAswJjWxKTP_u0YNm2cMg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

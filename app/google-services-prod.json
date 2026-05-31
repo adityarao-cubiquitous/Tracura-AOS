@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "539335222131",
+    "project_id": "tracura-be49d",
+    "storage_bucket": "tracura-be49d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:539335222131:android:41871bf9a042835037db06",
+        "android_client_info": {
+          "package_name": "com.cubiquitous.tracura"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA7ri1MbKiEBkRRnzib2cIYP_kSbiGQLuo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:539335222131:android:b8efab66d7886c1e37db06",
+        "android_client_info": {
+          "package_name": "com.deeksha.avr"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA7ri1MbKiEBkRRnzib2cIYP_kSbiGQLuo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
