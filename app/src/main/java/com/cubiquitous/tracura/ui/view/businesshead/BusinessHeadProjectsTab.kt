@@ -582,14 +582,14 @@ fun BusinessHeadProjectsTab(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 32.dp) // Match TopAppBar height from ApproverProjectDashboardScreen
+                .padding(top = 16.dp)
     ) {
         // Top Header BarfUSER
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(iosPalette.tier1Background)
-                .padding(horizontal = 8.dp, vertical = 3.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             // Left: Business Names
             /*Text(
@@ -630,7 +630,7 @@ fun BusinessHeadProjectsTab(
 
                 Text(
                     if (selectedCustomerName.length > 21) selectedCustomerName.take(21) + "..." else selectedCustomerName,
-                    fontSize = 24.sp,
+                    fontSize = 22.sp,
                     fontFamily = IosStyleFamily,
                     fontWeight = FontWeight.Bold,
                     color = iosPalette.textPrimary,
@@ -638,7 +638,7 @@ fun BusinessHeadProjectsTab(
                     softWrap = true,              // 👈 allows word wrapping
                     //overflow = TextOverflow.Ellipsis, // optional (remove if you want full text)
                     modifier = Modifier
-                        .fillMaxWidth(0.5f)           // 👈 important for proper wrapping
+                        .weight(1f)
                         .then(
                             if (selectedCustomerName.length > 21) {
                                 Modifier.clickable { showBusinessNameDialog = true }
@@ -882,13 +882,12 @@ fun BusinessHeadProjectsTab(
             // Project Count
             Text(
                 text = "${filteredProjects.size} project${if (filteredProjects.size != 1) "s" else ""}",
-                fontSize = 18.sp,
+                fontSize = 15.sp,
                 fontWeight= FontWeight.Light,
                 color = iosPalette.textSecondary,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                textAlign = TextAlign.Center
+                    .padding(horizontal = 16.dp)
             )
         
         /*// Search Bar
@@ -945,8 +944,8 @@ fun BusinessHeadProjectsTab(
                 onValueChange = { searchQuery = it },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 12.dp) // External padding
-                    .height(35.dp),
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
+                    .height(40.dp),
                 singleLine = true,
                 decorationBox = { innerTextField ->
                     OutlinedTextFieldDefaults.DecorationBox(
@@ -958,9 +957,9 @@ fun BusinessHeadProjectsTab(
                         interactionSource = remember { MutableInteractionSource() },
                         placeholder = {
                             Text(
-                                text = "Search Projects....",
+                                text = "Search projects...",
                                 color = iosPalette.textSecondary.copy(alpha=0.7f),
-                                fontSize = 18.sp
+                                fontSize = 16.sp
                             )
                         },
                         leadingIcon = {
@@ -998,7 +997,7 @@ fun BusinessHeadProjectsTab(
                                     unfocusedContainerColor = iosPalette.tier2Surface
                                 ),
                                 shape = RoundedCornerShape(12.dp),
-                                focusedBorderThickness = 2.dp,
+                                focusedBorderThickness = 1.dp,
                                 unfocusedBorderThickness = 1.dp
                             )
                         }
@@ -1131,7 +1130,7 @@ fun BusinessHeadProjectsTab(
                         .fillMaxSize()
                         .weight(1f),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     items(filteredProjects) { project ->
                         BusinessHeadProjectCardWithStatus(
@@ -2073,16 +2072,16 @@ fun BusinessHeadProjectCardWithStatus(
             .clickable(enabled = isClickable) {
                 if (isClickable) onClick()
             },
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = iosPalette.tier2Surface),
         border = BorderStroke(1.dp, iosPalette.hairline),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             // Row 1: Project code, Project name and Status badge with Edit icon
             Row(
@@ -2115,18 +2114,17 @@ fun BusinessHeadProjectCardWithStatus(
 
                     Spacer(modifier = Modifier.width(4.dp))
                     
-                    // Project name (bold) - truncate if > 14 characters
-                    val truncatedName = if (project.name.length > 14) {
-                        project.name.take(14) + "..."
+                    val truncatedName = if (project.name.length > 24) {
+                        project.name.take(24) + "..."
                     } else {
                         project.name
                     }
-                    val isTruncated = project.name.length > 14
+                    val isTruncated = project.name.length > 24
 
                     Text(
                         text = truncatedName,
                         maxLines = 1,
-                        fontSize = 24.sp,
+                        fontSize = 20.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = iosPalette.textPrimary,
                         modifier = Modifier
@@ -2148,7 +2146,7 @@ fun BusinessHeadProjectCardWithStatus(
                     // Status badge
                     Surface(
                         color = statusBgColor,
-                        modifier = Modifier.height(25.dp),
+                        modifier = Modifier.heightIn(min = 24.dp),
                         shape = RoundedCornerShape(16.dp),
                         border = BorderStroke(1.dp, statusColor.copy(alpha = 0.1f))
                     ) {
@@ -2170,7 +2168,7 @@ fun BusinessHeadProjectCardWithStatus(
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = statusText,
-                                        fontSize = 14.sp,
+                                        fontSize = 12.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = statusColor,
                                         modifier = Modifier.offset(y = (-1).dp)
@@ -2200,7 +2198,7 @@ fun BusinessHeadProjectCardWithStatus(
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = statusText,
-                                    fontSize = 14.sp,
+                                    fontSize = 12.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = statusColor,
                                     modifier = Modifier.offset(y = (-1).dp)
@@ -2250,9 +2248,9 @@ fun BusinessHeadProjectCardWithStatus(
             if (project.description.isNotEmpty()) {
                 Text(
                     text = project.description,
-                    fontSize = 16.sp,
+                    fontSize = 13.sp,
                     color = iosPalette.textSecondary,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -2288,7 +2286,7 @@ fun BusinessHeadProjectCardWithStatus(
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = FormatUtils.formatCurrency(project.budget),
-                            fontSize = 16.sp,
+                            fontSize = 13.sp,
                             color = iosPalette.textSecondary
                         )
                     }
@@ -2310,7 +2308,7 @@ fun BusinessHeadProjectCardWithStatus(
                         Spacer(modifier = Modifier.width(2.dp))
                         Text(
                             text = project.location,
-                            fontSize = 14.sp,
+                            fontSize = 12.sp,
                             color = iosPalette.textSecondary
                         )
                     }
@@ -2423,7 +2421,7 @@ fun BusinessHeadProjectCardWithStatus(
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = "${project.teamMembers.size} member${if (project.teamMembers.size != 1) "s" else ""}",
-                                fontSize = 16.sp,
+                                fontSize = 13.sp,
                                 color = iosPalette.textSecondary
                             )
                         }
@@ -2444,7 +2442,7 @@ fun BusinessHeadProjectCardWithStatus(
                             Spacer(modifier = Modifier.width(2.dp))
                             Text(
                                 text = project.client,
-                                fontSize = 14.sp,
+                                fontSize = 12.sp,
                                 color = iosPalette.textSecondary
                             )
                         }
@@ -2579,7 +2577,7 @@ fun BusinessHeadProjectCardWithStatus(
                     if (daysRemainingInfo != null) {
                         Text(
                             text = "${daysRemainingInfo.first} days left",
-                            fontSize = 14.sp,
+                            fontSize = 12.sp,
                             color = daysRemainingInfo.second
                         )
                         Spacer(modifier = Modifier.width(8.dp))
@@ -2594,7 +2592,7 @@ fun BusinessHeadProjectCardWithStatus(
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = formattedDateRange,
-                        fontSize = 14.sp,
+                        fontSize = 12.sp,
                         color = iosPalette.textSecondary
                     )
                 }

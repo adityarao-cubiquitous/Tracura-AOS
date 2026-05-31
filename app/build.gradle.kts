@@ -1,69 +1,17 @@
-//plugins {
-//    alias(libs.plugins.android.application)
-//    alias(libs.plugins.kotlin.android)
-//}
-//
-//android {
-//    namespace = "com.cubiquitous.tracura"
-//    compileSdk {
-//        version = release(36)
-//    }
-//
-//    defaultConfig {
-//        applicationId = "com.cubiquitous.tracura"
-//        minSdk = 24
-//        targetSdk = 36
-//        versionCode = 1
-//        versionName = "1.0"
-//
-//        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-//    }
-//
-//    buildTypes {
-//        release {
-//            isMinifyEnabled = false
-//            proguardFiles(
-//                getDefaultProguardFile("proguard-android-optimize.txt"),
-//                "proguard-rules.pro"
-//            )
-//        }
-//    }
-//    compileOptions {
-//        sourceCompatibility = JavaVersion.VERSION_11
-//        targetCompatibility = JavaVersion.VERSION_11
-//    }
-//    kotlinOptions {
-//        jvmTarget = "11"
-//    }
-//}
-//
-//dependencies {
-//    implementation(libs.androidx.core.ktx)
-//    implementation(libs.androidx.appcompat)
-//    implementation(libs.material)
-//    testImplementation(libs.junit)
-//    androidTestImplementation(libs.androidx.junit)
-//    androidTestImplementation(libs.androidx.espresso.core)
-//}
-
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    // 1. Added old plugins back (Make sure these are in your new libs.versions.toml if using alias)
     alias(libs.plugins.kotlin.compose)
     id("com.google.gms.google-services")
-    id("com.google.dagger.hilt.android")
+    alias(libs.plugins.hilt)
     id("kotlin-kapt")
 }
 
 android {
-    // KEEP YOUR NEW PACKAGE NAME HERE
     namespace = "com.cubiquitous.tracura"
-    compileSdk = 35 // Kept at 35 to match your old stable dependencies/compiler versions
+    compileSdk = 35
 
     defaultConfig {
-        // KEEP YOUR NEW APPLICATION ID HERE
         applicationId = "com.cubiquitous.tracura"
         minSdk = 24
         targetSdk = 35
@@ -91,17 +39,14 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 
-    kotlinOptions {
-        jvmTarget = "11"
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+        }
     }
 
-    // 2. Brought back Compose and Packaging configs from the old project
     buildFeatures {
         compose = true
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = "2.0.21"
     }
 
     testOptions {
@@ -113,18 +58,6 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
-        }
-    }
-}
-
-// 3. Brought back your compatibility test task
-afterEvaluate {
-    tasks.register("testClasses") {
-        group = "verification"
-        description = "Compiles test classes (compatibility task for Android)"
-        val compileTask = tasks.findByName("compileDebugUnitTestKotlin")
-        if (compileTask != null) {
-            dependsOn(compileTask)
         }
     }
 }
@@ -141,64 +74,64 @@ dependencies {
     implementation(libs.androidx.material3)
 
     // Navigation
-    implementation("androidx.navigation:navigation-compose:2.8.4")
+    implementation(libs.androidx.navigation.compose)
 
     // Hilt Dependency Injection
-    implementation("com.google.dagger:hilt-android:2.48")
-    implementation(libs.vision.internal.vkp)
-    implementation(libs.play.services.maps)
-    kapt("com.google.dagger:hilt-compiler:2.48")
-    implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.compiler)
+    implementation(libs.hilt.navigation.compose)
+    implementation(libs.hilt.work)
+    kapt(libs.hilt.androidx.compiler)
 
-    // Firebase (Using BOM 33.16.0)
-    implementation(platform("com.google.firebase:firebase-bom:33.16.0"))
-    implementation("com.google.firebase:firebase-analytics")
-    implementation("com.google.firebase:firebase-auth")
-    implementation("com.google.firebase:firebase-firestore")
-    implementation("com.google.firebase:firebase-messaging")
-    implementation("com.google.firebase:firebase-functions-ktx")
-    implementation("com.google.firebase:firebase-storage-ktx")
-    implementation("com.google.firebase:firebase-database")
+    // Firebase
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.messaging)
+    implementation(libs.firebase.database)
+    implementation(libs.firebase.storage)
+    implementation(libs.firebase.functions)
 
     // Utilities, Lifecycle, and UI Extras
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.1")
-    implementation("androidx.lifecycle:lifecycle-process:2.7.0")
+    implementation(libs.kotlinx.coroutines.play.services)
+    implementation("androidx.lifecycle:lifecycle-process:2.8.7")
     implementation("androidx.compose.material:material-icons-extended:1.7.0")
     implementation("com.google.android.gms:play-services-auth:20.7.0")
     implementation("com.google.android.gms:play-services-auth-api-phone:18.0.1")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
 
     // WorkManager
-    implementation("androidx.work:work-runtime-ktx:2.9.0")
-    implementation("androidx.hilt:hilt-work:1.1.0")
-    kapt("androidx.hilt:hilt-compiler:1.1.0")
+    implementation(libs.androidx.work.runtime.ktx)
 
-    // Third-party Libraries (Charts, PDFs, Images)
+    // Third-party Libraries
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
     implementation("com.itextpdf:itext7-core:7.2.5")
     implementation("com.github.dhaval2404:imagepicker:2.1")
-    implementation("io.coil-kt:coil-compose:2.5.0")
+    implementation(libs.coil.compose)
+    implementation(libs.gson)
     implementation("com.google.accompanist:accompanist-swiperefresh:0.32.0")
     implementation("com.google.accompanist:accompanist-permissions:0.32.0")
-    implementation("com.google.code.gson:gson:2.10.1")
 
     // CameraX & ML Kit
-    implementation("androidx.camera:camera-core:1.3.1")
-    implementation("androidx.camera:camera-camera2:1.3.1")
-    implementation("androidx.camera:camera-lifecycle:1.3.1")
-    implementation("androidx.camera:camera-view:1.3.1")
-    implementation("com.google.mlkit:text-recognition:16.0.1")
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
+    implementation(libs.mlkit.text.recognition)
+    implementation(libs.vision.internal.vkp)
+    implementation(libs.play.services.maps)
 
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
 
     // Testing
     testImplementation(libs.junit)
-    testImplementation("androidx.test:core:1.5.0")
-    testImplementation("androidx.test:runner:1.5.0")
-    testImplementation("androidx.test:rules:1.5.0")
-    testImplementation("org.mockito:mockito-core:5.3.1")
-    testImplementation("org.mockito.kotlin:mockito-kotlin:5.1.0")
+    testImplementation("androidx.test:core:1.6.1")
+    testImplementation("androidx.test:runner:1.6.1")
+    testImplementation("androidx.test:rules:1.6.1")
+    testImplementation("org.mockito:mockito-core:5.14.2")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
