@@ -210,29 +210,11 @@ class FCMTokenManager @Inject constructor() {
             
             val customerDoc = firestore.collection("customers").document(customerId)
             
-            // Get current document to check if FCMlist exists
             val docSnapshot = customerDoc.get().await()
             
             if (docSnapshot.exists()) {
-                val data = docSnapshot.data ?: return
-                val currentFCMList = (data["FCMlist"] as? List<*>)?.mapNotNull { it as? String }?.toMutableList() 
-                    ?: mutableListOf()
-                
-                // Add token if not already in list
-                if (!currentFCMList.contains(token)) {
-                    currentFCMList.add(token)
-                    customerDoc.update("FCMlist", currentFCMList).await()
-                    
-                    // Verify the update
-                    val verifyDoc = customerDoc.get().await()
-                    val verifyData = verifyDoc.data
-                    val verifyList = (verifyData?.get("FCMlist") as? List<*>)?.mapNotNull { it as? String } ?: emptyList()
-                    Log.d("FCMTokenManager", "✅ Verification - FCM token in list: ${verifyList.contains(token)}, total tokens: ${verifyList.size}")
-                    
-                    Log.d("FCMTokenManager", "✅ FCM token added to customers FCMlist for customer: $customerId")
-                } else {
-                    Log.d("FCMTokenManager", "ℹ️ FCM token already exists in FCMlist for customer: $customerId")
-                }
+                customerDoc.update("FCMlist", FieldValue.arrayUnion(token)).await()
+                Log.d("FCMTokenManager", "✅ FCM token added to customers FCMlist for customer: $customerId")
             } else {
                 // Create new document with FCMlist
                 customerDoc.set(mapOf(
@@ -406,18 +388,8 @@ class FCMTokenManager @Inject constructor() {
                 val docSnapshot = customerDoc.get().await()
                 
                 if (docSnapshot.exists()) {
-                    val data = docSnapshot.data ?: return
-                    val currentFCMList = (data["FCMlist"] as? List<*>)?.mapNotNull { it as? String }?.toMutableList() 
-                        ?: mutableListOf()
-                    
-                    // Remove token from list if it exists
-                    if (currentFCMList.contains(currentToken)) {
-                        currentFCMList.remove(currentToken)
-                        customerDoc.update("FCMlist", currentFCMList).await()
-                        Log.d("FCMTokenManager", "✅ FCM token removed from customers FCMlist for customer: $customerId")
-                    } else {
-                        Log.d("FCMTokenManager", "ℹ️ FCM token not found in FCMlist for customer: $customerId")
-                    }
+                    customerDoc.update("FCMlist", FieldValue.arrayRemove(currentToken)).await()
+                    Log.d("FCMTokenManager", "✅ FCM token removed from customers FCMlist for customer: $customerId")
                 } else {
                     Log.w("FCMTokenManager", "⚠️ Customer document not found: $customerId")
                 }

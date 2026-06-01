@@ -12,6 +12,7 @@ import com.google.firebase.auth.PhoneAuthCredential
 import com.google.firebase.auth.PhoneAuthProvider
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.Timestamp
 import kotlinx.coroutines.tasks.await
@@ -876,11 +877,7 @@ class AuthRepository @Inject constructor(
                     try {
                         firestore.collection("customers")
                             .document(finalCustomerId)
-                            .update(
-                                mapOf(
-                                    "$fieldPrefix.${user.department}" to FieldValue.increment(1)
-                                )
-                            )
+                            .update(FieldPath.of(fieldPrefix, user.department), FieldValue.increment(1))
                             .await()
                         Log.d(
                             "AuthRepository",
@@ -1530,6 +1527,50 @@ class AuthRepository @Inject constructor(
     private fun generateUserCode(): String {
         return "U${System.currentTimeMillis().toString().takeLast(8)}"
     }
+
+    private suspend fun upsertGlobalUserDocument(
+        phoneNumber: String,
+        name: String,
+        role: UserRole,
+        department: String,
+        customerId: String
+    ) {
+        val userRef = firestore.collection("users").document(phoneNumber)
+        val snapshot = userRef.get().await()
+
+        val existingData = snapshot.data.orEmpty()
+        val existingCustomerMap = mutableMapOf<String, String>()
+        (existingData["CustomerID"] as? Map<*, *>)?.forEach { (key, value) ->
+            val customerKey = key as? String
+            val roleValue = value as? String
+            if (customerKey != null && roleValue != null) {
+                existingCustomerMap[customerKey] = roleValue
+            }
+        }
+
+        existingCustomerMap[customerId] = role.firestoreValue
+
+        val existingOwnerId = (existingData["ownerID"] as? String)
+            ?.takeIf { it.isNotBlank() }
+            ?: (existingData["customerId"] as? String)?.takeIf { it.isNotBlank() }
+            ?: customerId
+
+        val userData = mutableMapOf<String, Any>(
+            "name" to ((existingData["name"] as? String)?.takeIf { it.isNotBlank() } ?: name),
+            "phoneNumber" to phoneNumber,
+            "role" to role.firestoreValue,
+            "createdAt" to (existingData["createdAt"] ?: Timestamp.now()),
+            "isActive" to (existingData["isActive"] as? Boolean ?: true),
+            "ownerID" to existingOwnerId,
+            "customerId" to existingOwnerId,
+            "CustomerID" to existingCustomerMap,
+            "department" to department
+        )
+
+        userData["fcmToken"] = existingData["fcmToken"] ?: ""
+
+        userRef.set(userData, com.google.firebase.firestore.SetOptions.merge()).await()
+    }
     
     /**
      * Create user with CustomerUserRelation support
@@ -1546,6 +1587,14 @@ class AuthRepository @Inject constructor(
         return try {
             val cleanPhone = phoneNumber.replace("+91", "").trim()
             Log.d("AuthRepository", "🔄 Creating user: phone=$cleanPhone, name=$name, role=$role, department=$department, overwrite=$overwrite")
+
+            upsertGlobalUserDocument(
+                phoneNumber = cleanPhone,
+                name = name,
+                role = role,
+                department = department,
+                customerId = customerId
+            )
             
             if (overwrite) {
                 // Overwrite path: Update existing CustomerUserRelation
@@ -1581,8 +1630,7 @@ class AuthRepository @Inject constructor(
                 
                 Log.d("AuthRepository", "✅ Updated existing CustomerUserRelation for user: $cleanPhone")
             } else {
-                // Normal creation path — only write to CustomerUserRelation, not users collection
-                Log.d("AuthRepository", "🔄 Normal mode: Creating CustomerUserRelation only")
+                Log.d("AuthRepository", "🔄 Normal mode: Creating CustomerUserRelation")
 
                 val userCode = generateUserCode()
                 val relationMap = mapOf(
@@ -1616,7 +1664,7 @@ class AuthRepository @Inject constructor(
                     try {
                         firestore.collection("customers")
                             .document(customerId)
-                            .update(mapOf("$fieldPrefix.$department" to FieldValue.increment(1)))
+                            .update(FieldPath.of(fieldPrefix, department), FieldValue.increment(1))
                             .await()
                         Log.d("AuthRepository", "✅ Incremented $fieldPrefix for department='$department'")
                     } catch (e: Exception) {
