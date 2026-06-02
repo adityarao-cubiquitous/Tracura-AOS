@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.sp
 import com.cubiquitous.tracura.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cubiquitous.tracura.model.ProjectTemplate
-import com.cubiquitous.tracura.model.ProjectTemplates
+import com.cubiquitous.tracura.model.ProjectTemplateMetadataService
 import com.cubiquitous.tracura.repository.ProjectRepository
 import com.cubiquitous.tracura.viewmodel.ProjectViewModel
 import kotlinx.coroutines.launch
@@ -43,45 +43,35 @@ fun SelectTemplateScreen(
     var searchQuery by remember { mutableStateOf("") }
     var businessType by remember { mutableStateOf<String?>(null) }
     var isLoadingBusinessType by remember { mutableStateOf(true) }
+    var allTemplates by remember { mutableStateOf<List<ProjectTemplate>>(emptyList()) }
+    var isLoadingTemplates by remember { mutableStateOf(true) }
     
     // Fetch customer's businessType
     LaunchedEffect(Unit) {
         try {
             businessType = projectRepository.getCustomerBusinessType()
             Log.d("SelectTemplateScreen", "📊 Customer business type: $businessType")
-            Log.d("SelectTemplateScreen", "📋 Total templates available: ${ProjectTemplates.templates.size}")
-            Log.d("SelectTemplateScreen", "📋 Templates by type:")
-            ProjectTemplates.templates.groupBy { it.businessType }.forEach { (type, templates) ->
-                Log.d("SelectTemplateScreen", "  $type: ${templates.size} templates")
-            }
         } catch (e: Exception) {
             Log.e("SelectTemplateScreen", "❌ Error fetching business type: ${e.message}")
         } finally {
             isLoadingBusinessType = false
         }
     }
-    
-    // Use local templates for all business types (Construction, Media, Interior Design)
-    // Show empty list while loading to prevent showing wrong templates
-    val allTemplates = remember(ProjectTemplates.templates, businessType, isLoadingBusinessType) {
+
+    LaunchedEffect(businessType, isLoadingBusinessType) {
         if (isLoadingBusinessType) {
-            // Show empty list while loading business type
             Log.d("SelectTemplateScreen", "⏳ Loading business type, showing empty list")
-            emptyList()
-        } else if (businessType != null) {
-            val filtered = ProjectTemplates.templates.filter { 
-                it.businessType == businessType 
-            }
-            Log.d("SelectTemplateScreen", "✅ Filtered ${filtered.size} templates for business type: $businessType")
-            filtered.forEach { template ->
-                Log.d("SelectTemplateScreen", "  - ${template.name} (${template.id})")
-            }
-            filtered
-        } else {
-            // If businessType is null after loading, show all templates as fallback
-            Log.d("SelectTemplateScreen", "⚠️ Business type is null after loading, showing all templates")
-            ProjectTemplates.templates
+            allTemplates = emptyList()
+            return@LaunchedEffect
         }
+
+        isLoadingTemplates = true
+        allTemplates = ProjectTemplateMetadataService.getTemplates(businessType)
+        Log.d("SelectTemplateScreen", "✅ Loaded ${allTemplates.size} templates for business type: $businessType")
+        allTemplates.forEach { template ->
+            Log.d("SelectTemplateScreen", "  - ${template.name} (${template.id})")
+        }
+        isLoadingTemplates = false
     }
     
     val filteredTemplates = remember(searchQuery, allTemplates) {
@@ -175,6 +165,19 @@ fun SelectTemplateScreen(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                if (isLoadingBusinessType || isLoadingTemplates) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 48.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                }
+
                 items(filteredTemplates) { template ->
                     TemplateCard(
                         template = template,

@@ -90,6 +90,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import com.cubiquitous.tracura.model.Customer
+import com.cubiquitous.tracura.model.ProjectTemplate
+import com.cubiquitous.tracura.model.ProjectTemplateMetadataService
 
 /**
  * iOS-style horizontal slide navigation transitions
@@ -2928,14 +2930,15 @@ fun AppNavHost(
         ) { backStackEntry ->
             val templateId = backStackEntry.arguments?.getString("templateId") ?: ""
             val viewModel: BusinessHeadViewModel = hiltViewModel()
-            
-            // Find template and pre-fill NewProjectScreen
-            val template = com.cubiquitous.tracura.model.ProjectTemplates.templates.find { it.id == templateId }
-            
-            android.util.Log.d("AppNavHost", "📥 Loading template with ID: $templateId")
-            android.util.Log.d("AppNavHost", "📥 Template found: ${template != null}")
-            if (template != null) {
-                android.util.Log.d("AppNavHost", "📥 Template name: ${template.name}, Phases: ${template.phases.size}")
+            var template by remember(templateId) { mutableStateOf<ProjectTemplate?>(null) }
+
+            LaunchedEffect(templateId) {
+                template = ProjectTemplateMetadataService.getTemplate(templateId)
+                android.util.Log.d("AppNavHost", "📥 Loading template with ID: $templateId")
+                android.util.Log.d("AppNavHost", "📥 Template found: ${template != null}")
+                template?.let {
+                    android.util.Log.d("AppNavHost", "📥 Template name: ${it.name}, Phases: ${it.phases.size}")
+                }
             }
             
             NewProjectScreen(

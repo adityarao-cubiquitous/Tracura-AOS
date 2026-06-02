@@ -83,7 +83,7 @@ import com.cubiquitous.tracura.ui.common.DepartmentLineItemsSection
 import com.cubiquitous.tracura.ui.common.AddDepartmentModalSheet
 import com.cubiquitous.tracura.ui.common.AddLineItemModalSheet
 import com.cubiquitous.tracura.model.ProjectTemplate
-import com.cubiquitous.tracura.model.ProjectTemplates
+import com.cubiquitous.tracura.model.ProjectTemplateMetadataService
 import com.google.firebase.Timestamp
 import com.google.gson.Gson
 import java.text.NumberFormat
@@ -407,6 +407,8 @@ fun NewProjectScreen(
     // Internal template selection state (for dropdown)
     var selectedTemplateInternal by remember { mutableStateOf<ProjectTemplate?>(null) }
     var templateDropdownExpanded by remember { mutableStateOf(false) }
+    var availableTemplates by remember { mutableStateOf<List<ProjectTemplate>>(emptyList()) }
+    var isLoadingTemplates by remember { mutableStateOf(false) }
 
     // Load business type on screen initialization
     LaunchedEffect(Unit) {
@@ -426,27 +428,17 @@ fun NewProjectScreen(
         viewModel.loadFirestoreDrafts()
     }
 
-    // Filter templates based on business type
-    val availableTemplates = remember(ProjectTemplates.templates, businessType) {
-        if (businessType != null) {
-            val filtered = ProjectTemplates.templates.filter {
-                it.businessType == businessType
-            }
-            android.util.Log.d(
-                "NewProjectScreen",
-                "✅ Filtered ${filtered.size} templates for business type: $businessType"
-            )
-            filtered.forEach { template ->
-                android.util.Log.d("NewProjectScreen", "  - ${template.name} (${template.id})")
-            }
-            filtered
-        } else {
-            // If businessType is null, show all templates as fallback
-            android.util.Log.d(
-                "NewProjectScreen", "⚠️ Business type is null, showing all templates"
-            )
-            ProjectTemplates.templates
+    LaunchedEffect(businessType) {
+        isLoadingTemplates = true
+        availableTemplates = ProjectTemplateMetadataService.getTemplates(businessType)
+        android.util.Log.d(
+            "NewProjectScreen",
+            "✅ Loaded ${availableTemplates.size} templates for business type: $businessType"
+        )
+        availableTemplates.forEach { template ->
+            android.util.Log.d("NewProjectScreen", "  - ${template.name} (${template.id})")
         }
+        isLoadingTemplates = false
     }
 
     // Use internal template if available, otherwise use parameter template
@@ -1953,7 +1945,12 @@ fun NewProjectScreen(
                                             onDismissRequest = { templateDropdownExpanded = false },
                                             modifier = Modifier.background(MaterialTheme.colorScheme.surface)
                                         ) {
-                                            if (availableTemplates.isEmpty()) {
+                                            if (isLoadingTemplates) {
+                                                DropdownMenuItem(
+                                                    text = { Text("Loading templates...") },
+                                                    onClick = { }
+                                                )
+                                            } else if (availableTemplates.isEmpty()) {
                                                 DropdownMenuItem(
                                                     text = { Text("No templates available") },
                                                     onClick = { })

@@ -3,6 +3,8 @@ package com.cubiquitous.tracura.model
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.tasks.await
 import java.util.Calendar
 import java.util.Date
 
@@ -1059,3 +1061,177 @@ object ProjectTemplates {
     )
 }
 
+object ProjectTemplateMetadataService {
+    private val firestore: FirebaseFirestore
+        get() = FirebaseFirestore.getInstance()
+
+    suspend fun getTemplates(businessType: String?): List<ProjectTemplate> {
+        return try {
+            val cloudTemplates = fetchTemplates(businessType)
+            cloudTemplates.ifEmpty { localTemplates(businessType) }
+        } catch (error: Exception) {
+            android.util.Log.w(
+                "TemplateMetadataService",
+                "Falling back to bundled templates: ${error.message}",
+                error
+            )
+            localTemplates(businessType)
+        }
+    }
+
+    suspend fun getTemplate(templateId: String): ProjectTemplate? {
+        return try {
+            val document = firestore.collection("metadata")
+                .document("projectTemplates")
+                .collection("templates")
+                .document(templateId)
+                .get()
+                .await()
+
+            document.data?.takeIf { it["isActive"] as? Boolean != false }?.toProjectTemplate(document.id)
+                ?: ProjectTemplates.templates.find { it.id == templateId }
+        } catch (error: Exception) {
+            android.util.Log.w(
+                "TemplateMetadataService",
+                "Falling back to bundled template $templateId: ${error.message}",
+                error
+            )
+            ProjectTemplates.templates.find { it.id == templateId }
+        }
+    }
+
+    private suspend fun fetchTemplates(businessType: String?): List<ProjectTemplate> {
+        val snapshot = firestore.collection("metadata")
+            .document("projectTemplates")
+            .collection("templates")
+            .whereEqualTo("isActive", true)
+            .get()
+            .await()
+
+        return snapshot.documents.mapNotNull { document ->
+            document.data?.toProjectTemplate(document.id)
+        }.filter { template ->
+            businessType.isNullOrBlank() || normalizeBusinessType(template.businessType) == normalizeBusinessType(businessType)
+        }.sortedWith(compareBy<ProjectTemplate> { it.businessType.orEmpty() }.thenBy { it.name.lowercase() })
+    }
+
+    private fun localTemplates(businessType: String?): List<ProjectTemplate> {
+        return if (businessType.isNullOrBlank()) {
+            ProjectTemplates.templates
+        } else {
+            ProjectTemplates.templates.filter {
+                normalizeBusinessType(it.businessType) == normalizeBusinessType(businessType)
+            }
+        }
+    }
+
+    private fun Map<String, Any>.toProjectTemplate(documentId: String): ProjectTemplate? {
+        val id = stringValue("id").ifBlank { documentId }
+        val title = stringValue("title").ifBlank { return null }
+        val description = stringValue("description")
+        val phasesData = this["phases"] as? List<*> ?: return null
+        val phases = phasesData.mapNotNull { (it as? Map<*, *>)?.toPhaseDraft() }
+
+        return ProjectTemplate(
+            id = id,
+            name = title,
+            description = description,
+            icon = iconValue(stringValue("icon")),
+            phases = phases,
+            businessType = this["businessType"] as? String
+        )
+    }
+
+    private fun Map<*, *>.toPhaseDraft(): PhaseDraft? {
+        val phaseName = this["phaseName"] as? String ?: return null
+        val departmentsData = this["departments"] as? List<*> ?: return null
+        val departments = departmentsData.mapNotNull { (it as? Map<*, *>)?.toDepartmentDraft() }.toMutableList()
+
+        return PhaseDraft(
+            phaseName = phaseName,
+            start = dateFromOffset(numberValue("startDateDays").toInt()),
+            end = dateFromOffset(numberValue("endDateDays").toInt()),
+            departments = departments
+        )
+    }
+
+    private fun Map<*, *>.toDepartmentDraft(): DepartmentDraft? {
+        val name = this["name"] as? String ?: return null
+        val lineItemsData = this["lineItems"] as? List<*> ?: emptyList<Any>()
+        val lineItems = lineItemsData.mapNotNull { (it as? Map<*, *>)?.toLineItem() }.toMutableList()
+
+        return DepartmentDraft(
+            departmentName = name,
+            contractorMode = contractorModeValue(this["contractorMode"] as? String),
+            lineItems = lineItems
+        )
+    }
+
+    private fun Map<*, *>.toLineItem(): LineItem? {
+        val itemType = stringValue("itemType")
+        val item = stringValue("item")
+        if (itemType.isBlank() || item.isBlank()) return null
+
+        return LineItem(
+            itemType = itemType,
+            item = item,
+            spec = stringValue("spec"),
+            quantity = numberValue("quantity"),
+            unitPrice = numberValue("unitPrice"),
+            uom = stringValue("uom")
+        )
+    }
+
+    private fun Map<*, *>.stringValue(key: String): String {
+        return when (val value = this[key]) {
+            is String -> value
+            is Number -> value.toString()
+            null -> ""
+            else -> value.toString()
+        }
+    }
+
+    private fun Map<*, *>.numberValue(key: String): Double {
+        return when (val value = this[key]) {
+            is Number -> value.toDouble()
+            is String -> value.toDoubleOrNull() ?: 0.0
+            else -> 0.0
+        }
+    }
+
+    private fun dateFromOffset(days: Int): Date {
+        return Calendar.getInstance().apply {
+            add(Calendar.DAY_OF_YEAR, days)
+        }.time
+    }
+
+    private fun contractorModeValue(value: String?): ContractorMode {
+        return when (value?.trim()?.lowercase()) {
+            "self execution", "self-execution" -> ContractorMode.SELF_EXECUTION
+            "turnkey", "turnkey amount only", "turnkey_amount_only" -> ContractorMode.TURNKEY_AMOUNT_ONLY
+            else -> ContractorMode.LABOUR_ONLY
+        }
+    }
+
+    private fun iconValue(value: String): ImageVector {
+        return when (value.trim().lowercase()) {
+            "house.fill", "home", "house" -> Icons.Default.Home
+            "building.2.fill", "building", "business" -> Icons.Default.Business
+            "road.lanes", "road" -> Icons.Default.Route
+            "paintbrush.fill", "paintbrush" -> Icons.Default.Brush
+            "video.fill", "video", "movie" -> Icons.Default.Movie
+            "camera.fill", "camera" -> Icons.Default.PhotoCamera
+            else -> Icons.Default.Description
+        }
+    }
+
+    private fun normalizeBusinessType(value: String?): String {
+        return value.orEmpty()
+            .trim()
+            .lowercase()
+            .replace("-", " ")
+            .split(Regex("\\s+"))
+            .filter { it.isNotBlank() }
+            .joinToString(" ")
+    }
+}
