@@ -1866,7 +1866,7 @@ fun AppNavHost(
             popEnterTransition = { defaultPopEnterTransitions() },
             popExitTransition = { defaultPopExitTransitions() }
         ) {
-            val authViewModel: AuthViewModel = hiltViewModel()
+            val businessHeadViewModel: BusinessHeadViewModel = hiltViewModel()
             AdminDashboardScreen(
                 onNavigateToManageUsers = {
                     navController.navigate(Screen.ManageUsers.route)
@@ -1877,12 +1877,73 @@ fun AppNavHost(
                 onNavigateToReports = {
                     navController.navigate(Screen.Reports.route)
                 },
+                onNavigateToProject = { projectId, project, fromNotification, notificationMessage ->
+                    project?.let { businessHeadViewModel.preloadProjectForEdit(it) }
+                    navController.navigate(
+                        Screen.BusinessHeadProjectDashboard.createRoute(
+                            projectId,
+                            fromNotification = expenseListRouteArgument(fromNotification),
+                            NotificationMessage = notificationMessage ?: ""
+                        )
+                    )
+                },
+                onNavigateToNewProject = {
+                    navController.navigate(Screen.NewProject.route)
+                },
+                onNavigateToEditProject = { projectId ->
+                    navController.navigate(Screen.EditProject.createRoute(projectId))
+                },
+                onNavigateToNewProjectForResubmission = { projectId ->
+                    navController.navigate(Screen.NewProjectWithId.createRoute(projectId))
+                },
+                onNavigateToOverallReports = {
+                    navController.navigate(Screen.BusinessHeadOverallReports.route)
+                },
+                onNavigateToNotifications = {
+                    navController.navigate(Screen.NotificationList.route)
+                },
+                onNavigateToChat = { projectId, chatId, otherUserName ->
+                    navController.navigate(Screen.Chat.createRoute(projectId, chatId, otherUserName))
+                },
+                onNavigateToExpenseReview = { expenseId, notifTypeStr ->
+                    navController.navigate(Screen.BusinessHeadReviewExpense.createRoute(expenseId, notifTypeStr))
+                },
+                onNavigateToExpenseChat = { expenseId ->
+                    navController.navigate(Screen.BusinessHeadReviewExpense.createRoute(expenseId))
+                },
+                onNavigateToProfile = { userRole ->
+                    navController.currentBackStackEntry?.savedStateHandle?.set("profileUserRole", userRole.name)
+                    navController.navigate(Screen.UserProfile.route)
+                },
+                onNavigateToProjectDetail = { projectId, project, fromNotification, notificationMessage ->
+                    project?.let { businessHeadViewModel.preloadProjectForEdit(it) }
+                    navController.navigate(
+                        Screen.ExpenseList.createRoute(
+                            projectId,
+                            expenseListRouteArgument(fromNotification),
+                            notificationMessage = notificationMessage ?: ""
+                        )
+                    )
+                },
+                onNavigateToCreateUser = {
+                    navController.navigate(Screen.CreateUser.route)
+                },
+                onNavigateToViewAllUsers = {
+                    navController.navigate(Screen.ViewAllUsers.route)
+                },
+                onNavigateToDepartmentUserManagement = {
+                    navController.navigate(Screen.DepartmentUserManagement.route)
+                },
+                onNavigateToRoleManagement = {
+                    navController.navigate(Screen.RoleManagement.route)
+                },
                 onLogout = {
                     authViewModel.logout()
                     navController.navigate(Screen.Login.route) {
                         popUpTo(0) { inclusive = true }
                     }
-                }
+                },
+                authViewModel = authViewModel
             )
         }
         

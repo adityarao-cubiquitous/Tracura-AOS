@@ -137,7 +137,10 @@ fun BusinessHeadProjectsTab(
         val user = authState.user
         when {
             user == null -> false
-            userRole != UserRole.BUSINESS_HEAD && userRole != UserRole.MANAGER && user.phone.isNullOrEmpty() -> false
+            userRole != UserRole.BUSINESS_HEAD &&
+                userRole != UserRole.MANAGER &&
+                userRole != UserRole.ADMIN &&
+                user.phone.isNullOrEmpty() -> false
             else -> true
         }
     }
@@ -172,7 +175,7 @@ fun BusinessHeadProjectsTab(
     LaunchedEffect(currentCustomerId, userRole, currentUser?.uid) {
         val targetCustomerId = when {
             !currentCustomerId.isNullOrBlank() -> currentCustomerId
-            userRole == UserRole.BUSINESS_HEAD -> currentUser?.uid
+            userRole == UserRole.BUSINESS_HEAD || userRole == UserRole.ADMIN -> currentUser?.uid
             else -> null
         }
         targetCustomerId?.let { projectViewModel.loadBusinessName(it) }
@@ -214,13 +217,13 @@ fun BusinessHeadProjectsTab(
         
         // Determine user ID based on role
         val userId = when (userRole) {
-            UserRole.BUSINESS_HEAD -> user.uid
+            UserRole.BUSINESS_HEAD, UserRole.ADMIN -> user.uid
             else -> user.phone // MANAGER, APPROVER, USER all use phone
         }
 
         // Get customer ID
         val customerId = when (userRole) {
-            UserRole.BUSINESS_HEAD -> currentCustomerId ?: user.uid
+            UserRole.BUSINESS_HEAD, UserRole.ADMIN -> currentCustomerId ?: user.uid
             UserRole.MANAGER -> currentCustomerId
             else -> currentCustomerId
         }
@@ -260,7 +263,7 @@ fun BusinessHeadProjectsTab(
                 
                 // Determine user ID based on role
                 val userId = when (userRole) {
-                    UserRole.BUSINESS_HEAD -> {
+                    UserRole.BUSINESS_HEAD, UserRole.ADMIN -> {
                         // For BUSINESS_HEAD, use email if available, otherwise use UID
                         user.email.ifEmpty { user.uid }
                     }
@@ -277,7 +280,7 @@ fun BusinessHeadProjectsTab(
                 
                 // Get customer ID - for USER/APPROVER, we need to fetch ownerID from users collection
                 val customerId = when (userRole) {
-                    UserRole.BUSINESS_HEAD -> {
+                    UserRole.BUSINESS_HEAD, UserRole.ADMIN -> {
                         // For BUSINESS_HEAD, customer ID is their UID
                         currentCustomerId ?: user.uid
                     }
@@ -290,7 +293,7 @@ fun BusinessHeadProjectsTab(
                 projectViewModel.refreshProjectsByRole(userId, userRole, customerId)
                 projectViewModel.loadAllPhaseRequests()
                 
-                val targetCustomerId = currentCustomerId ?: if (userRole == UserRole.BUSINESS_HEAD) user.uid else null
+                val targetCustomerId = currentCustomerId ?: if (userRole == UserRole.BUSINESS_HEAD || userRole == UserRole.ADMIN) user.uid else null
                 targetCustomerId?.let { projectViewModel.loadBusinessName(it) }
                 
                 // Wait a bit for refresh to complete
@@ -702,7 +705,7 @@ fun BusinessHeadProjectsTab(
                                     val updatedUser = authViewModel.authState.value.user ?: return@DropdownMenuItem
                                     val updatedRole = updatedUser.role
                                     val userId = when (updatedRole) {
-                                        UserRole.BUSINESS_HEAD -> updatedUser.uid
+                                        UserRole.BUSINESS_HEAD, UserRole.ADMIN -> updatedUser.uid
                                         else -> updatedUser.phone
                                     }
 
@@ -1029,7 +1032,7 @@ fun BusinessHeadProjectsTab(
                             val user = currentUser ?: authState.user
                             if (user != null) {
                                 val userId = when (userRole) {
-                                    UserRole.BUSINESS_HEAD -> user.email.ifEmpty { user.uid }
+                                    UserRole.BUSINESS_HEAD, UserRole.ADMIN -> user.email.ifEmpty { user.uid }
                                     else -> {
                                         if (user.phone.isNotEmpty()) {
                                             user.phone
@@ -1040,7 +1043,11 @@ fun BusinessHeadProjectsTab(
                                         }
                                     }
                                 }
-                                val customerId = if (userRole == UserRole.BUSINESS_HEAD) (currentCustomerId ?: user.uid) else currentCustomerId
+                                val customerId = if (userRole == UserRole.BUSINESS_HEAD || userRole == UserRole.ADMIN) {
+                                    currentCustomerId ?: user.uid
+                                } else {
+                                    currentCustomerId
+                                }
                                 Log.d("BusinessHeadProjectsTab", "🔄 Retry: Starting realtime listener: userId=$userId, role=$userRole, customerId=$customerId")
                                 projectViewModel.startRealtimeListenerByRole(userId, userRole, customerId)
                                 projectViewModel.loadAllPhaseRequests()
@@ -1062,7 +1069,7 @@ fun BusinessHeadProjectsTab(
                                         val user = currentUser ?: authState.user
                                         val targetCustomerId = when {
                                             !currentCustomerId.isNullOrBlank() -> currentCustomerId
-                                            userRole == UserRole.BUSINESS_HEAD -> user?.uid
+                                            userRole == UserRole.BUSINESS_HEAD || userRole == UserRole.ADMIN -> user?.uid
                                             else -> null
                                         }
 

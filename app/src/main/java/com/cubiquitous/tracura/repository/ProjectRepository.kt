@@ -3406,7 +3406,9 @@ class ProjectRepository @Inject constructor(
                 }
 
                 val cleanPhone = normalizePhoneNumber(userId)
-                val isBusinessHead = userId == "admin@avr.com" || role == com.cubiquitous.tracura.model.UserRole.BUSINESS_HEAD
+                val isBusinessHead = userId == "admin@avr.com" ||
+                    role == com.cubiquitous.tracura.model.UserRole.BUSINESS_HEAD ||
+                    role == com.cubiquitous.tracura.model.UserRole.ADMIN
                 val isManager = role == com.cubiquitous.tracura.model.UserRole.MANAGER
 
                 val projects = when {
@@ -3471,7 +3473,8 @@ class ProjectRepository @Inject constructor(
                     .collection("projects")
 
                 firestoreListener = when (role) {
-                    com.cubiquitous.tracura.model.UserRole.BUSINESS_HEAD -> {
+                    com.cubiquitous.tracura.model.UserRole.BUSINESS_HEAD,
+                    com.cubiquitous.tracura.model.UserRole.ADMIN -> {
                         projectsRef.addSnapshotListener { snapshot, error ->
                             if (error != null) { trySend(emptyList()); return@addSnapshotListener }
                             val projects = snapshot?.documents?.mapNotNull { parseProjectFromDocument(it) } ?: emptyList()
